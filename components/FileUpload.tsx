@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 
 interface FileUploadProps {
-  onFileSelect: (file: File | null) => void;
+  onFileSelect: (files: File[] | null) => void;
 }
 
 const InfoAccordion: React.FC = () => {
@@ -36,6 +36,7 @@ const InfoAccordion: React.FC = () => {
                         <li><strong className="text-gray-800 dark:text-gray-300">Security:</strong> We will never ask for your ISP or cloud account logins. This protects you from potential credential theft.</li>
                         <li><strong className="text-gray-800 dark:text-gray-300">Privacy:</strong> The app cannot access your local network or router. This ensures your network activity remains completely private.</li>
                         <li><strong className="text-gray-800 dark:text-gray-300">Simplicity:</strong> Uploading a standard billing document (CSV, PDF, or even a screenshot) is a secure and reliable way to provide data for analysis.</li>
+                        <li><strong className="text-gray-800 dark:text-gray-300">How the AI Works:</strong> Our AI acts as a specialized cloud cost analyst. It is strictly programmed to identify spending anomalies based on the data you provide. It does not give financial advice, cannot access your accounts, and operates under strict rules to ensure its analysis is objective and data-driven.</li>
                     </ul>
                 </div>
             </div>
@@ -45,7 +46,7 @@ const InfoAccordion: React.FC = () => {
 
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
-  const [fileName, setFileName] = useState<string>('');
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
@@ -53,19 +54,36 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
 
   const handleFileChange = (files: FileList | null) => {
     setError('');
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (validTypes.includes(file.type)) {
-        setFileName(file.name);
-        onFileSelect(file);
-      } else {
-        setError(`Invalid file type. Please upload a CSV, PDF, PNG, or JPG.`);
-        setFileName('');
+    if (!files || files.length === 0) {
+        setFileNames([]);
         onFileSelect(null);
-      }
+        return;
+    }
+
+    const fileArray = Array.from(files);
+
+    if (fileArray.length > 1) {
+        // If multiple files, all must be CSVs
+        const allCsv = fileArray.every(file => file.type === 'text/csv');
+        if (!allCsv) {
+            setError('Invalid selection. When uploading multiple files, they must all be CSVs.');
+            setFileNames([]);
+            onFileSelect(null);
+            return;
+        }
+        setFileNames(fileArray.map(f => f.name));
+        onFileSelect(fileArray);
     } else {
-        setFileName('');
-        onFileSelect(null);
+        // Single file logic
+        const file = fileArray[0];
+        if (validTypes.includes(file.type)) {
+            setFileNames([file.name]);
+            onFileSelect([file]);
+        } else {
+            setError(`Invalid file type. Please upload a CSV, PDF, PNG, or JPG.`);
+            setFileNames([]);
+            onFileSelect(null);
+        }
     }
   };
 
@@ -86,7 +104,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
     e.stopPropagation();
     setIsDragging(false);
     handleFileChange(e.dataTransfer.files);
-  }, []);
+  }, [handleFileChange]);
 
   return (
     <div className="w-full">
@@ -102,9 +120,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           <span className="text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400">
-            {fileName || (
+            {fileNames.length > 0 ? fileNames.join(', ') : (
               <>
-                Drop CSV, PDF, or image here, or <span className="text-blue-500 dark:text-blue-400 underline">browse</span>
+                Drop CSV(s), PDF, or image here, or <span className="text-blue-500 dark:text-blue-400 underline">browse</span>
               </>
             )}
           </span>
@@ -114,6 +132,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
           name="file_upload"
           className="hidden"
           accept=".csv,.pdf,.png,.jpg,.jpeg"
+          multiple
           onChange={(e) => handleFileChange(e.target.files)}
         />
       </label>

@@ -1,5 +1,5 @@
 
-import React, { useReducer, useCallback, useEffect, useState } from 'react';
+import React, { useReducer, useCallback, useEffect, useState, useRef } from 'react';
 import { PricingTiers, Tier, tiers } from './components/PricingTiers';
 import { FileUpload } from './components/FileUpload';
 import { ParameterInputs } from './components/ParameterInputs';
@@ -7,6 +7,8 @@ import { ReportDisplay } from './components/ReportDisplay';
 import { analyzeCloudCosts } from './services/geminiService';
 import { sendAdminNotification } from './services/notificationService';
 import { appReducer, initialState } from './state/appReducer';
+import { TestimonialPopup } from './components/TestimonialPopup';
+import { testimonials } from './data/testimonials';
 
 const ThemeToggle: React.FC<{ theme: 'dark' | 'light'; toggleTheme: () => void }> = ({ theme, toggleTheme }) => (
     <button
@@ -17,7 +19,7 @@ const ThemeToggle: React.FC<{ theme: 'dark' | 'light'; toggleTheme: () => void }
         {theme === 'dark' ? (
             // Sun icon for switching to light mode
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-3.536a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zM5.05 14.95l-.707-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414zM16.364 3.636a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM4.343 4.343a1 1 0 00-1.414 1.414l.707.707a1 1 0 101.414-1.414l-.707-.707z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-3.536a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zM5.05 14.95l-.707-.707a1 1 0 00-1.414 1.414l.707.707a1 1  0 001.414-1.414zM16.364 3.636a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM4.343 4.343a1 1 0 00-1.414 1.414l.707.707a1 1 0 101.414-1.414l-.707-.707z" clipRule="evenodd" />
             </svg>
         ) : (
             // Moon icon for switching to dark mode
@@ -36,6 +38,9 @@ const App: React.FC = () => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isTestimonialVisible, setIsTestimonialVisible] = useState(false);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const testimonialTimerRef = useRef<number | null>(null);
 
   // Effect to load theme from localStorage and set it on the root element
   useEffect(() => {
@@ -56,10 +61,50 @@ const App: React.FC = () => {
     root.classList.add(newTheme);
     localStorage.setItem('theme', newTheme);
   };
+  
+  // Effect to manage testimonial popups
+  useEffect(() => {
+    const clearTimer = () => {
+        if (testimonialTimerRef.current) {
+            clearTimeout(testimonialTimerRef.current);
+        }
+    };
+    
+    if (status === 'initial') {
+        // Show first testimonial after 10 seconds
+        testimonialTimerRef.current = window.setTimeout(() => {
+            setIsTestimonialVisible(true);
+        }, 10000);
+    } else {
+        // If status is not initial, hide testimonial and clear timer
+        setIsTestimonialVisible(false);
+        clearTimer();
+    }
+    
+    return clearTimer; // Cleanup on component unmount or status change
+  }, [status]);
+  
+  const handleCloseTestimonial = () => {
+    setIsTestimonialVisible(false);
+    // Cycle to the next testimonial
+    setTestimonialIndex(prevIndex => (prevIndex + 1) % testimonials.length);
+    
+    // Clear any existing timer
+    if (testimonialTimerRef.current) {
+        clearTimeout(testimonialTimerRef.current);
+    }
+    
+    // Set a new timer for the next testimonial to appear after a longer delay
+    testimonialTimerRef.current = window.setTimeout(() => {
+        if (status === 'initial') { // Double-check status before showing
+            setIsTestimonialVisible(true);
+        }
+    }, 60000); // 60 seconds delay for subsequent popups
+  };
 
 
   const startAnalysis = useCallback(async () => {
-     if (!billingFile || !selectedTier || !pendingParams) {
+     if (!billingFile || billingFile.length === 0 || !selectedTier || !pendingParams) {
       dispatch({ type: 'SET_ERROR', payload: 'Missing required information for analysis. Please start over.' });
       return;
     }
@@ -71,49 +116,78 @@ const App: React.FC = () => {
     if (tierDetails) {
       sendAdminNotification({
         tierName: tierDetails.name,
-        fileName: billingFile.name,
+        fileName: billingFile.map(f => f.name).join(', '),
         cloudProvider: pendingParams.provider,
       });
     }
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const fileContent = event.target?.result as string;
-        if (!fileContent) {
-            dispatch({ type: 'SET_ERROR', payload: 'Could not read the uploaded file.' });
-            return;
-        }
+      // Multi-file handling for CSVs
+      if (billingFile.length > 1) {
+          // Validation in FileUpload component ensures all are CSVs
+          const readPromises = billingFile.map(file => new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (event) => resolve(event.target?.result as string);
+              reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+              reader.readAsText(file);
+          }));
+          
+          const contents = await Promise.all(readPromises);
+          const combinedContent = contents.join('\n\n'); // Join with newlines for separation
 
-        try {
-            const result = await analyzeCloudCosts(
-              { content: fileContent, mimeType: billingFile.type }, 
-              pendingParams.provider, 
-              pendingParams.budget, 
-              pendingParams.services
-            );
-            setAnalysisProgress(100);
-            dispatch({ type: 'ANALYSIS_SUCCESS', payload: { result, params: pendingParams } });
-        } catch (err) {
-            console.error('Gemini API Error:', err);
-            dispatch({ type: 'SET_ERROR', payload: 'An error occurred during analysis. Please check your API key and try again.' });
-        }
-      };
-      reader.onerror = () => {
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to read file.' });
-      };
-
-      if (billingFile.type === 'text/csv') {
-        reader.readAsText(billingFile);
-      } else if (['application/pdf', 'image/png', 'image/jpeg'].includes(billingFile.type)) {
-        reader.readAsDataURL(billingFile);
+          try {
+              const result = await analyzeCloudCosts(
+                  { content: combinedContent, mimeType: 'text/csv' },
+                  pendingParams.provider, 
+                  pendingParams.budget, 
+                  pendingParams.services
+              );
+              setAnalysisProgress(100);
+              dispatch({ type: 'ANALYSIS_SUCCESS', payload: { result, params: pendingParams } });
+          } catch (err) {
+               console.error('Gemini API Error:', err);
+               dispatch({ type: 'SET_ERROR', payload: 'An error occurred during analysis. Please check your API key and try again.' });
+          }
       } else {
-        dispatch({ type: 'SET_ERROR', payload: `Unsupported file type: ${billingFile.type}` });
-      }
+          // Single file handling (existing logic for CSV, PDF, Image)
+          const singleFile = billingFile[0];
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+              const fileContent = event.target?.result as string;
+              if (!fileContent) {
+                  dispatch({ type: 'SET_ERROR', payload: 'Could not read the uploaded file.' });
+                  return;
+              }
 
+              try {
+                  const result = await analyzeCloudCosts(
+                      { content: fileContent, mimeType: singleFile.type }, 
+                      pendingParams.provider, 
+                      pendingParams.budget, 
+                      pendingParams.services
+                  );
+                  setAnalysisProgress(100);
+                  dispatch({ type: 'ANALYSIS_SUCCESS', payload: { result, params: pendingParams } });
+              } catch (err) {
+                  console.error('Gemini API Error:', err);
+                  dispatch({ type: 'SET_ERROR', payload: 'An error occurred during analysis. Please check your API key and try again.' });
+              }
+          };
+          reader.onerror = () => {
+              dispatch({ type: 'SET_ERROR', payload: `Failed to read file: ${singleFile.name}.` });
+          };
+
+          if (singleFile.type === 'text/csv') {
+              reader.readAsText(singleFile);
+          } else if (['application/pdf', 'image/png', 'image/jpeg'].includes(singleFile.type)) {
+              reader.readAsDataURL(singleFile);
+          } else {
+              dispatch({ type: 'SET_ERROR', payload: `Unsupported file type: ${singleFile.type}` });
+          }
+      }
     } catch (err) {
       console.error('File Reading Error:', err);
-      dispatch({ type: 'SET_ERROR', payload: 'An unexpected error occurred. Please try again.' });
+      dispatch({ type: 'SET_ERROR', payload: 'An unexpected error occurred while reading files. Please try again.' });
     }
   }, [billingFile, selectedTier, pendingParams]);
 
@@ -153,7 +227,7 @@ const App: React.FC = () => {
       setAnalysisProgress(0); // Reset progress
       const messages: { [key: number]: string } = {
         0: "Connecting to AI...",
-        15: "Parsing your document...",
+        15: "Parsing your document(s)...",
         40: "Analyzing spending patterns...",
         65: "Checking for anomalies...",
         85: "Compiling your report...",
@@ -182,10 +256,10 @@ const App: React.FC = () => {
 
       return () => clearInterval(interval);
     }
-  }, [status]);
+  }, [status, loadingMessage]);
 
 
-  const isInitialStateReady = billingFile && selectedTier;
+  const isInitialStateReady = billingFile && billingFile.length > 0 && selectedTier;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans flex flex-col items-center p-4 sm:p-6 lg:p-8 transition-colors duration-300">
@@ -193,14 +267,14 @@ const App: React.FC = () => {
         <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
         <header className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-500 dark:from-blue-400 dark:to-teal-300">
-            Cloud Cost Anomaly Assistant
+            OptimaCloud Anomaly Assistant
           </h1>
           <p className="mt-2 text-base sm:text-lg text-gray-600 dark:text-gray-400">
             Upload your cloud billing document to detect cost leaks.
           </p>
           <p className="mt-4 text-xs sm:text-sm text-yellow-800 dark:text-yellow-300 bg-yellow-100/80 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700/50 rounded-full px-3 py-1 inline-flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.026a12.005 12.005 0 01-1.422 6.075c-.345.816-.45 1.705-.45 2.599v1.003c0 .606.246 1.178.653 1.585a2.235 2.235 0 001.582.653h14.938c.606 0 1.178-.246 1.585-.653a2.235 2.235 0 00.653-1.585v-1.003c0-.894-.105-1.783-.45-2.599a12.005 12.005 0 01-1.422-6.075A11.954 11.954 0 0110 1.944zM8 10a2 2 0 114 0v3a2 2 0 11-4 0v-3z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.026a12.005 12.005 0 01-1.422 6.075c-.345.816-.45 1.705-.45 2.599v1.003c0 .606.246 1.178.653 1.585a2.235 2.235 0 001.582.653h14.938c.606 0 1.178-.246 1.585-.653a2.235 2.235 0 00.653-1.585v-1.003c0 -.894-.105-1.783-.45-2.599a12.005 12.005 0 01-1.422-6.075A11.954 11.954 0 0110 1.944zM8 10a2 2 0 114 0v3a2 2 0 11-4 0v-3z" clipRule="evenodd" />
             </svg>
             <span className="font-semibold">Privacy First:</span> Your data is never saved or stored.
           </p>
@@ -215,7 +289,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Step 2: Upload Billing Document</h2>
-                <FileUpload onFileSelect={(file) => dispatch({ type: 'SET_FILE', payload: file })} />
+                <FileUpload onFileSelect={(files) => dispatch({ type: 'SET_FILE', payload: files })} />
               </div>
               <div>
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Step 3: Provide Context & Analyze</h2>
@@ -314,10 +388,24 @@ const App: React.FC = () => {
             </div>
           )}
         </main>
-        <footer className="text-center mt-8 py-4 text-gray-500 dark:text-gray-500 text-sm">
-          <p>&copy; {new Date().getFullYear()} OptimaCloud. All Rights Reserved.Design & Developed by Kepler Camp Codes.</p>
+        <footer className="text-center mt-8 py-4 border-t border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-500 text-sm">
+            <p className="mb-2">Automated Anomaly Detection to Safeguard Your Cloud Spend.</p>
+            <div className="flex justify-center sm:justify-between items-center flex-col sm:flex-row gap-2">
+                <p>&copy; {new Date().getFullYear()} OptimaCloud. All Rights Reserved.</p>
+                <div className="flex gap-4">
+                    <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Terms of Service</a>
+                    <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Privacy Policy</a>
+                </div>
+            </div>
         </footer>
       </div>
+      
+      {isTestimonialVisible && (
+        <TestimonialPopup 
+          testimonial={testimonials[testimonialIndex]} 
+          onClose={handleCloseTestimonial} 
+        />
+      )}
     </div>
   );
 };

@@ -13,7 +13,7 @@ export interface AnalysisParams {
 export interface State {
   status: AppStatus;
   selectedTier: Tier | null;
-  billingFile: File | null;
+  billingFile: File[] | null;
   analysisResult: string;
   errorMessage: string;
   pendingParams: AnalysisParams | null;
@@ -22,7 +22,7 @@ export interface State {
 
 export type Action =
   | { type: 'SELECT_TIER'; payload: Tier }
-  | { type: 'SET_FILE'; payload: File | null }
+  | { type: 'SET_FILE'; payload: File[] | null }
   | { type: 'SUBMIT_PARAMETERS'; payload: AnalysisParams }
   | { type: 'CANCEL_PAYMENT' }
   | { type: 'PROCEED_TO_PAYMENT' }

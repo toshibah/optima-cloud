@@ -1,8 +1,4 @@
 
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const MASTER_PROMPT = `
 SYSTEM ROLE
 
@@ -69,13 +65,12 @@ HARD RULES (DO NOT VIOLATE)
 `;
 
 /**
- * Analyzes cloud cost data from a provided file (CSV, PDF, or image).
- * 
- * This function implements a robust method for data extraction by leveraging the multimodal capabilities of the Gemini model.
- * Instead of performing client-side OCR or PDF text extraction (which would be slow, increase application size, and be less accurate),
- * we send the raw file data (as text for CSV or base64 for PDF/images) directly to the model.
- * The model is prompted to perform the necessary data extraction and analysis in a single step,
- * ensuring higher accuracy and better contextual understanding of the billing document's layout and content.
+ * Analyzes cloud cost data by sending it to a secure server-side PHP proxy.
+ *
+ * This function no longer calls the Gemini API directly from the client. Instead, it sends the
+ * file data and parameters to a PHP script located at `/api/gemini-proxy.php`.
+ * This proxy is responsible for securely attaching the API key and communicating with the Gemini API,
+ * preventing the API key from being exposed in the browser.
  */
 export const analyzeCloudCosts = async (
   fileData: { content: string; mimeType: string },
@@ -84,64 +79,42 @@ export const analyzeCloudCosts = async (
   coreServices: string
 ): Promise<string> => {
   try {
-    const textPrompt = `
-      Client-defined parameters:
-      - Cloud provider(s): ${provider}
-      - Expected monthly budget range: ${budget}
-      - Core services in use: ${coreServices}
-
-      Please analyze the provided billing document and generate the report strictly following the OUTPUT FORMAT specified in your system role.
-    `;
-
-    let contents: any;
-
-    if (fileData.mimeType === 'text/csv') {
-      contents = `
-        ---
-        INPUTS RECEIVED:
-
-        Billing Data (CSV Content):
-        \`\`\`csv
-        ${fileData.content}
-        \`\`\`
-        ${textPrompt}
-      `;
-    } else {
-      // Handle PDF and images
-      if (!fileData.content.includes(';base64,')) {
-          throw new Error("Invalid file content for image or PDF. Expected a base64 data URL.");
-      }
-      const base64Data = fileData.content.split(';base64,')[1];
-      contents = {
-        parts: [
-          { text: `---\n${textPrompt}` },
-          {
-            inlineData: {
-              mimeType: fileData.mimeType,
-              data: base64Data,
-            },
-          },
-        ],
-      };
-    }
-    
-    // FIX: Refactored to use systemInstruction for the master prompt, following Gemini API guidelines.
-    const response = await ai.models.generateContent({
-        // FIX: Upgraded to a more powerful model suitable for complex document analysis.
-        model: 'gemini-3-pro-preview', // A powerful multimodal model for analyzing text, images, and documents.
-        contents: contents,
-        config: {
-            systemInstruction: MASTER_PROMPT,
-        }
+    const response = await fetch('/api/gemini-proxy.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        masterPrompt: MASTER_PROMPT,
+        fileData,
+        provider,
+        budget,
+        coreServices,
+      }),
     });
 
-    if (response && response.text) {
-        return response.text;
+    if (!response.ok) {
+        // Attempt to get more detailed error info from the proxy's response
+        const errorBody = await response.json().catch(() => ({ error: 'Could not parse error response from server.' }));
+        const errorMessage = errorBody?.error?.message || `The server responded with an error: ${response.statusText}`;
+        throw new Error(errorMessage);
+    }
+    
+    const result = await response.json();
+    
+    // The response from the proxy should be the direct response from the Gemini API.
+    // We need to extract the text content from the candidates array.
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (text) {
+        return text;
     } else {
-        throw new Error("Received an empty response from the AI model.");
+        console.error("Invalid response structure from proxy:", result);
+        throw new Error("Received an unexpected or empty response from the analysis service.");
     }
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    throw new Error("Failed to get a response from the AI model. Please check the console for more details.");
+    console.error("Error calling the backend proxy:", error);
+    // Re-throw the error so it can be caught by the UI and displayed to the user.
+    throw error;
   }
 };
