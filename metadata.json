@@ -1,0 +1,5 @@
+{
+  "name": "Cloud Cost Anomaly Detection Engine",
+  "description": "An automated engine to detect abnormal spending patterns and potential cost leaks from cloud billing data using AI. Upload your billing CSV to get a detailed anomaly report.",
+  "requestFramePermissions": []
+}
