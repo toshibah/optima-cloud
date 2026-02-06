@@ -1,103 +1,52 @@
 
-import React, { useState, useEffect } from 'react';
-import { Tooltip } from './Tooltip';
+import React from 'react';
 
 interface ParameterInputsProps {
-  onSubmit: (params: { provider: string; budget: string; services: string; }) => void;
-  disabled: boolean;
-  initialParams?: { provider: string; budget: string; services: string; } | null;
+  provider: string;
+  setProvider: (value: string) => void;
+  budget: string;
+  setBudget: (value: string) => void;
+  services: string;
+  setServices: (value: string) => void;
+  isLoading: boolean;
 }
 
-export const ParameterInputs: React.FC<ParameterInputsProps> = ({ onSubmit, disabled, initialParams }) => {
-  const [provider, setProvider] = useState('');
-  const [budget, setBudget] = useState('');
-  const [services, setServices] = useState('');
-
-  useEffect(() => {
-    setProvider(initialParams?.provider || '');
-    setBudget(initialParams?.budget || '');
-    setServices(initialParams?.services || '');
-  }, [initialParams]);
-
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ provider, budget, services });
-  };
-
+export const ParameterInputs: React.FC<ParameterInputsProps> = ({
+  provider, setProvider, budget, setBudget, services, setServices, isLoading
+}) => {
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <div className="flex items-center gap-2">
-            <label htmlFor="provider" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Cloud Provider(s)
-            </label>
-            <Tooltip text="Specify all providers in the bill (e.g., AWS, GCP). This helps the AI focus its analysis.">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-1 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-               </svg>
-            </Tooltip>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="provider" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cloud Provider(s)</label>
+          <input type="text" name="provider" id="provider" value={provider} onChange={e => setProvider(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., AWS, GCP, Azure" required />
         </div>
-        <input
-          type="text"
-          id="provider"
-          value={provider}
-          onChange={(e) => setProvider(e.target.value)}
-          placeholder="e.g., AWS, GCP, Azure"
-          required
-          className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <div>
+          <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Monthly Budget</label>
+          <input type="text" name="budget" id="budget" value={budget} onChange={e => setBudget(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., $5,000 - $7,000" required />
+        </div>
       </div>
       <div>
-        <div className="flex items-center gap-2">
-            <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Expected Monthly Budget Range
-            </label>
-             <Tooltip text="Provide a realistic range. This is crucial for the AI to determine what qualifies as an 'anomaly' for your scale.">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-1 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-               </svg>
-            </Tooltip>
-        </div>
-        <input
-          type="text"
-          id="budget"
-          value={budget}
-          onChange={(e) => setBudget(e.target.value)}
-          placeholder="e.g., $5,000 - $7,000"
-          required
-          className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <label htmlFor="services" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Core Services in Use</label>
+        <input type="text" name="services" id="services" value={services} onChange={e => setServices(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., EC2, S3, RDS, Lambda" required />
       </div>
-      <div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="services" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Core Services in Use
-          </label>
-           <Tooltip text="List primary services you use (e.g., EC2, S3). This helps identify unusual usage in non-core services.">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mb-1 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-             </svg>
-          </Tooltip>
-        </div>
-        <textarea
-          id="services"
-          value={services}
-          onChange={(e) => setServices(e.target.value)}
-          placeholder="e.g., EC2, S3, RDS, Lambda for AWS"
-          required
-          rows={3}
-          className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500 resize-y"
-        />
+      <div className="pt-4 text-center">
+        <button type="submit" id="analyze-button" disabled={isLoading} className="relative w-full sm:w-auto bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white font-extrabold py-3 px-12 rounded-lg transition-transform duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          {isLoading && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analyzing...
+            </span>
+          )}
+          <span className={isLoading ? 'opacity-0' : ''}>Analyze Now</span>
+        </button>
+        {isLoading && (
+             <p className="text-gray-600 dark:text-gray-400 mt-4">Please wait, connecting to AI and processing your document(s)...</p>
+        )}
       </div>
-      <button
-        type="submit"
-        disabled={disabled}
-        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
-      >
-        Analyze Costs
-      </button>
-      {disabled && <p className="text-xs text-center text-gray-500 dark:text-gray-500 mt-2">Please upload a file and select a tier to enable analysis.</p>}
-    </form>
+    </div>
   );
 };
