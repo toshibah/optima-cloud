@@ -5,8 +5,8 @@ services:
     name: optimacloud
     runtime: node
     plan: free # Change this if you use a paid plan.
-    buildCommand: "npm install"
-    startCommand: "npm start"
+    buildCommand: "yarn install && yarn build"
+    startCommand: "yarn start"
     envVars:
       - key: API_KEY
         sync: false # Set this in the Render dashboard
