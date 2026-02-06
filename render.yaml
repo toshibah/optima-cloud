@@ -1,27 +1,18 @@
 # render.yaml
-# This file is the definitive blueprint for deploying your application on Render.
-# To apply this configuration, you must create a NEW "Blueprint" service in your Render dashboard.
-# The existing service is likely misconfigured with the wrong runtime and is ignoring this file.
-#
-# How to fix:
-# 1. Go to your Render Dashboard.
-# 2. Click "New" -> "Blueprint".
-# 3. Connect your GitHub repository.
-# 4. Render will automatically detect and use this `render.yaml` file to configure the new service.
-# 5. Give your new service a name (e.g., optima-cloud-v2) and click "Apply".
-# 6. Once the new service is live, you can delete the old, failing one.
-
+# Blueprint for deploying the OptimaCloud application with a Node.js backend.
 services:
   - type: web
-    name: optima-cloud
-    # CRITICAL: This sets the correct environment to run PHP and Apache.
-    runtime: php
+    name: optimacloud
+    runtime: node
     plan: free # Change this if you use a paid plan.
-    
-    # This project uses an importmap for frontend dependencies, so there is no Node.js build step.
-    # We provide an empty build command to prevent Render from trying to run `yarn install` or `npm install`.
-    buildCommand: "echo 'No build step required. Static assets and PHP will be served by Apache.'"
-    
-    # The start command for Render's PHP environment is to run the Apache server in the foreground.
-    # This will serve your index.html, assets, and execute PHP scripts in the /api directory.
-    startCommand: 'apache2-foreground'
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: API_KEY
+        sync: false # Set this in the Render dashboard
+      - key: EMAILJS_PUBLIC_KEY
+        sync: false # Set this in the Render dashboard
+      - key: EMAILJS_SERVICE_ID
+        sync: false # Set this in the Render dashboard
+      - key: EMAILJS_TEMPLATE_ID
+        sync: false # Set this in the Render dashboard

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ParameterInputsProps {
   provider: string;
@@ -14,6 +14,26 @@ interface ParameterInputsProps {
 export const ParameterInputs: React.FC<ParameterInputsProps> = ({
   provider, setProvider, budget, setBudget, services, setServices, isLoading
 }) => {
+  const [budgetError, setBudgetError] = useState<string | null>(null);
+
+  const validateBudget = (value: string): boolean => {
+    // Validates formats like: $1,000, $5000, $5,000 - $7,000
+    // Allows an optional $, optional commas, and an optional range with a hyphen.
+    const budgetRegex = /^\$?\s*[\d,]+(?:\s*-\s*\$?\s*[\d,]+)?$/;
+    return budgetRegex.test(value.trim());
+  };
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setBudget(value); // Update parent state
+
+    if (value && !validateBudget(value)) {
+      setBudgetError("Invalid format. Use '$1,000' or '$5,000 - $7,000'.");
+    } else {
+      setBudgetError(null); // Clear error if valid or empty
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -23,7 +43,21 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
         </div>
         <div>
           <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Monthly Budget</label>
-          <input type="text" name="budget" id="budget" value={budget} onChange={e => setBudget(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., $5,000 - $7,000" required />
+          <input 
+            type="text" 
+            name="budget" 
+            id="budget" 
+            value={budget} 
+            onChange={handleBudgetChange} 
+            className={`w-full bg-gray-100 dark:bg-gray-700 border rounded-md py-2 px-3 transition-colors ${
+              budgetError 
+              ? 'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' 
+              : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+            }`}
+            placeholder="e.g., $5,000 - $7,000" 
+            required 
+          />
+          {budgetError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{budgetError}</p>}
         </div>
       </div>
       <div>
@@ -31,7 +65,7 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
         <input type="text" name="services" id="services" value={services} onChange={e => setServices(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., EC2, S3, RDS, Lambda" required />
       </div>
       <div className="pt-4 text-center">
-        <button type="submit" id="analyze-button" disabled={isLoading} className="relative w-full sm:w-auto bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white font-extrabold py-3 px-12 rounded-lg transition-transform duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="submit" id="analyze-button" disabled={isLoading || !!budgetError} className="relative w-full sm:w-auto bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 text-white font-extrabold py-3 px-12 rounded-lg transition-transform duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
           {isLoading && (
             <span className="absolute inset-0 flex items-center justify-center">
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
