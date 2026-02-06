@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Don't rewrite for the API folder, let Apache handle PHP files directly.
+  RewriteCond %{REQUEST_URI} !^/api/
+
+  # Don't rewrite for existing files, directories, or symlinks
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  
+  # For all other requests, serve the main index.html file.
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Serve index.html as the directory index for the root.
+DirectoryIndex index.html
