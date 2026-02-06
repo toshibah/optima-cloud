@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free # Change this if you use a paid plan.
     buildCommand: "yarn install && yarn build"
-    startCommand: "yarn start"
+    startCommand: "node server.js"
     envVars:
       - key: API_KEY
         sync: false # Set this in the Render dashboard
