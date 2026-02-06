@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { testimonials } from '../data/testimonials';
+import { testimonials } from '../data/testimonials.ts';
 
 interface TestimonialPopupProps {
     onClose: () => void;

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import type { AppConfig } from '../App';
+import type { AppConfig } from '../App.tsx';
 
 declare const marked: any; // Using CDN, so declare it globally
 declare const html2canvas: any;

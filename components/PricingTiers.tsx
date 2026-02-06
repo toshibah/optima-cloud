@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { Tier } from '../App';
+import type { Tier } from '../App.tsx';
 
 interface PricingTiersProps {
   selectedTier: Tier;

@@ -5,7 +5,7 @@ services:
     name: optimacloud
     runtime: node
     plan: free # Change this if you use a paid plan.
-    buildCommand: "yarn install && yarn build"
+    buildCommand: "npm install"
     startCommand: "node server.js"
     envVars:
       - key: API_KEY

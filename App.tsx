@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { PricingTiers } from './components/PricingTiers';
-import { FileUpload } from './components/FileUpload';
-import { ParameterInputs } from './components/ParameterInputs';
-import { ReportDisplay } from './components/ReportDisplay';
-import { TestimonialPopup } from './components/TestimonialPopup';
-import { SharedReportView } from './components/SharedReportView';
+import { PricingTiers } from './components/PricingTiers.tsx';
+import { FileUpload } from './components/FileUpload.tsx';
+import { ParameterInputs } from './components/ParameterInputs.tsx';
+import { ReportDisplay } from './components/ReportDisplay.tsx';
+import { TestimonialPopup } from './components/TestimonialPopup.tsx';
+import { SharedReportView } from './components/SharedReportView.tsx';
 
 export type Tier = 'scan' | 'monitoring' | 'bonus' | '';
 
