@@ -47,7 +47,7 @@ app.use(express.json()); // <-- Add this to parse JSON bodies
 // --- 2. API ENDPOINTS ---
 
 // Endpoint to provide public config to the frontend
-app.get('/api/config', (req, res) => {
+app.get('/server-api/config', (req, res) => {
   res.json({
     EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY || '',
     EMAILJS_SERVICE_ID: process.env.EMAILJS_SERVICE_ID || '',
@@ -56,7 +56,7 @@ app.get('/api/config', (req, res) => {
 });
 
 // Endpoint to store a report and generate a shareable ID
-app.post('/api/share', (req, res) => {
+app.post('/server-api/share', (req, res) => {
   const { reportContent } = req.body;
   if (!reportContent) {
     return res.status(400).json({ error: 'Report content is required.' });
@@ -74,7 +74,7 @@ app.post('/api/share', (req, res) => {
 });
 
 // Endpoint to retrieve a shared report
-app.get('/api/report/:id', (req, res) => {
+app.get('/server-api/report/:id', (req, res) => {
   const { id } = req.params;
   const reportContent = reportsStore[id];
 
@@ -87,7 +87,7 @@ app.get('/api/report/:id', (req, res) => {
 
 
 // Main endpoint to process billing data and call Gemini
-app.post('/api/analyze', upload.array('billingFile[]'), async (req, res) => {
+app.post('/server-api/analyze', upload.array('billingFile[]'), async (req, res) => {
   const { provider, budget, services, tier } = req.body;
   const files = req.files;
 

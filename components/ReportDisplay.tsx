@@ -59,7 +59,7 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent, onR
   const handleShare = async () => {
     setShareState({ loading: true, url: '', error: '', copied: false });
     try {
-      const response = await fetch('/api/share', {
+      const response = await fetch('/server-api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportContent }),
@@ -157,11 +157,16 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent, onR
       </div>
 
       {shareState.url && (
-        <div className="no-print mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center gap-4 w-full max-w-2xl mx-auto">
-          <input type="text" readOnly value={shareState.url} className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 text-sm" />
-          <button onClick={handleCopyToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1 px-3 rounded-lg w-28 text-center">
-            {shareState.copied ? 'Copied!' : 'Copy Link'}
-          </button>
+        <div className="no-print mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg w-full max-w-2xl mx-auto">
+          <div className="flex items-center gap-3">
+            <input type="text" readOnly value={shareState.url} className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 text-sm flex-1" />
+            <button onClick={handleCopyToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1 px-3 rounded-lg w-28 text-center transition-colors duration-200">
+              {shareState.copied ? 'Copied!' : 'Copy Link'}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-center text-gray-600 dark:text-gray-400">
+            Note: This temporary report link will expire 24 hours after creation.
+          </p>
         </div>
       )}
        {shareState.error && <p className="no-print mt-2 text-center text-red-600 dark:text-red-400">{shareState.error}</p>}

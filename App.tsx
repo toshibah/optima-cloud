@@ -44,7 +44,7 @@ export const App = () => {
       const reportId = match[1];
       const fetchSharedReport = async () => {
         try {
-          const response = await fetch(`/api/report/${reportId}`);
+          const response = await fetch(`/server-api/report/${reportId}`);
           if (!response.ok) {
             const result = await response.json();
             throw new Error(result.error || 'Failed to load shared report.');
@@ -64,7 +64,7 @@ export const App = () => {
     
       const fetchConfig = async () => {
         try {
-          const response = await fetch('/api/config');
+          const response = await fetch('/server-api/config');
           if (!response.ok) {
             const statusText = response.statusText || 'An unknown server error occurred';
             throw new Error(`Configuration Error (${response.status}): ${statusText}. The app may not function correctly.`);
@@ -122,7 +122,7 @@ export const App = () => {
     });
 
     try {
-      const response = await fetch('/api/analyze', {
+      const response = await fetch('/server-api/analyze', {
         method: 'POST',
         body: formData,
       });
