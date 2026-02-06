@@ -1,10 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 
 declare const marked: any; // Using CDN, so declare it globally
 declare const html2canvas: any;
 declare const jspdf: any;
 declare const emailjs: any;
+
+// Define the shape of the config object that will be injected from the server
+declare global {
+  interface Window {
+    APP_CONFIG: {
+      EMAILJS_PUBLIC_KEY: string;
+      EMAILJS_SERVICE_ID: string;
+      EMAILJS_TEMPLATE_ID: string;
+    };
+  }
+}
 
 interface ReportDisplayProps {
   reportContent: string;
@@ -22,11 +32,18 @@ export const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportContent, onR
       alert('Please enter an email address.');
       return;
     }
+
+    // Ensure config is available before proceeding
+    if (!window.APP_CONFIG?.EMAILJS_PUBLIC_KEY || !window.APP_CONFIG?.EMAILJS_SERVICE_ID || !window.APP_CONFIG?.EMAILJS_TEMPLATE_ID) {
+        setEmailStatus({ message: 'Email service is not configured. Please contact support.', type: 'error' });
+        console.error('EmailJS config is missing from window.APP_CONFIG');
+        return;
+    }
     
     setEmailStatus({ message: 'Sending...', type: 'success' });
 
-    emailjs.init({ publicKey: 'p4HsHHiUqEWF2eGb2' });
-    emailjs.send('service_kjy0pmn', 'template_k3o5q1i', {
+    emailjs.init({ publicKey: window.APP_CONFIG.EMAILJS_PUBLIC_KEY });
+    emailjs.send(window.APP_CONFIG.EMAILJS_SERVICE_ID, window.APP_CONFIG.EMAILJS_TEMPLATE_ID, {
       to_email: email,
       report_content: reportContent,
     }).then(() => {
